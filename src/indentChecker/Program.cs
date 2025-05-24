@@ -14,6 +14,11 @@
                 Console.WriteLine($"Error: {ex}");
                 Console.ResetColor();
             }
+            finally
+            {
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey();
+            }
         }
     }
 }
