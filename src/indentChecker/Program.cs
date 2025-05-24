@@ -10,7 +10,9 @@
             }
             catch (Exception ex)
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Error: {ex}");
+                Console.ResetColor();
             }
         }
     }
