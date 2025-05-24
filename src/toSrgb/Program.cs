@@ -67,13 +67,18 @@ namespace toSrgb
                         }
 
                         string originalFileName = Path.GetFileName(inputPath);
-                        var match = Regex.Match(originalFileName, @"^(\d{8}-\d{6}) \((.+)\)(.+?)$");
+                        var match = Regex.Match(originalFileName, @"^(\d{8}-\d{6})\s+\((.+)\)(.+?)$");
                         string cleanedFileName;
                         if (match.Success)
                         {
-                            string nameWithoutExt = match.Groups[1].Value;
-                            string ext = match.Groups[2].Value;
-                            cleanedFileName = $"{nameWithoutExt}{ext}";
+                            // match.Groups[0]: full match (entire filename)
+                            // match.Groups[1]: timestamp (\d{8}-\d{6})
+                            // match.Groups[2]: base name (inside parentheses)
+                            // match.Groups[3]: extension (after parentheses)
+                            string timestampPart = match.Groups[1].Value;
+                            string baseName = match.Groups[2].Value;
+                            string ext = match.Groups[3].Value;
+                            cleanedFileName = $"{baseName}{ext}";
                         }
                         else
                         {
