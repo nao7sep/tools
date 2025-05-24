@@ -9,6 +9,32 @@ namespace toSrgb
         {
             try
             {
+                // JPEG Quality Classification for Adobe RGB to sRGB Conversion
+                //
+                // This app converts JPEG images from Adobe RGB to sRGB color space,
+                // and re-saves them using a user-selected JPEG quality level.
+                //
+                // Source Analysis:
+                // - Sony Alpha (DSLR): original JPEGs align with quality ~96–97
+                // - Xiaomi Phone: original JPEGs align with quality ~95–96
+                // - ScanSnap Scanner: original JPEGs align with quality ~75–80
+                //
+                // Purpose:
+                // Simplify JPEG output quality selection using three intuitive presets,
+                // avoiding vague or misleading terms like "high" or "maximum".
+                // These presets reflect practical tradeoffs between file size and visual fidelity.
+                //
+                // Quality Presets:
+                // 1 - Compact  (Quality 75)  : Smaller file size with acceptable visual quality.
+                //                              Suitable for sharing, previews, or when storage matters.
+                // 2 - Balanced (Quality 85)  : A compromise between quality and size.
+                //                              Ideal for everyday use where quality still matters.
+                // 3 - Detailed (Quality 95)  : Very low compression artifacts.
+                //                              Best for post-processing output, printing, or preserving detail.
+                //
+                // Note: JPEG quality 100 is intentionally excluded due to its excessive file size
+                //       and minimal visual improvement over quality 95.
+
                 var options = CommandLineOptions.Parse(args);
 
                 if (options.ImagePaths.Count == 0)
