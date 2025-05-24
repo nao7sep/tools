@@ -1,4 +1,4 @@
-﻿namespace indentChecker
+﻿namespace toSrgb
 {
     class Program
     {
