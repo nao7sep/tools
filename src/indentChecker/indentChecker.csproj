@@ -11,4 +11,19 @@
         <ProjectReference Include="..\..\..\pawKit\src\pawKitLib\pawKitLib.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Update="encodingMap.json">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="ignoredFullPaths.txt">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="ignoredNames.txt">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="scanRoots.txt">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
 </Project>
