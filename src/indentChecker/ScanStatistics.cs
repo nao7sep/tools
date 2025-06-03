@@ -58,9 +58,9 @@ namespace indentChecker
             sb.AppendLine("[Files with Issues]");
             foreach (var (file, encoding, message) in FilesWithIssues.OrderBy(x => x.File, StringComparer.OrdinalIgnoreCase))
                 sb.AppendLine($"{file} (encoding: {encoding}): {message}");
-            sb.AppendLine();
             if (Errors.Count > 0)
             {
+                sb.AppendLine();
                 sb.AppendLine("[Errors]");
                 foreach (var err in Errors)
                     sb.AppendLine(err);
