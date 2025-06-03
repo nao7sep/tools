@@ -20,6 +20,8 @@ namespace indentChecker
 
         static void Main(string[] args)
         {
+            // Register additional encodings (e.g., shift_jis)
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             try
             {
                 // Map required files to absolute paths
