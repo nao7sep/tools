@@ -6,11 +6,12 @@ namespace indentChecker
     {
         static readonly string[] RequiredFiles = new[]
         {
+            "scanRoots.txt",
             "ignoredFullPaths.txt",
             "ignoredNames.txt",
             "ignoredExtensions.txt",
-            "scanRoots.txt",
-            "encodingMap.json"
+            "encodingMap.json",
+            "indentModeMap.json"
         };
 
         static string GetAbsolutePath(string relativePath)
@@ -35,11 +36,12 @@ namespace indentChecker
                 }
 
                 // Load config files using absolute paths
+                var scanRoots = new TrimmedLinesFile(GetAbsolutePath("scanRoots.txt")).Lines;
                 var ignoredFullPaths = new HashSet<string>(new TrimmedLinesFile(GetAbsolutePath("ignoredFullPaths.txt")).Lines, StringComparer.OrdinalIgnoreCase);
                 var ignoredNames = new HashSet<string>(new TrimmedLinesFile(GetAbsolutePath("ignoredNames.txt")).Lines, StringComparer.OrdinalIgnoreCase);
                 var ignoredExtensions = new HashSet<string>(new TrimmedLinesFile(GetAbsolutePath("ignoredExtensions.txt")).Lines, StringComparer.OrdinalIgnoreCase);
-                var scanRoots = new TrimmedLinesFile(GetAbsolutePath("scanRoots.txt")).Lines;
-                var encodingMap = new EncodingMapFile(GetAbsolutePath("encodingMap.json"));
+                var encodingMap = new MappingFile(GetAbsolutePath("encodingMap.json"));
+                var indentModeMap = new MappingFile(GetAbsolutePath("indentModeMap.json"));
 
                 var stats = new ScanStatistics();
 
@@ -52,7 +54,7 @@ namespace indentChecker
                         Console.WriteLine($"Root directory not found: {root}");
                         continue;
                     }
-                    ScanDirectory(root, ignoredFullPaths, ignoredNames, ignoredExtensions, encodingMap, stats);
+                    ScanDirectory(root, ignoredFullPaths, ignoredNames, ignoredExtensions, encodingMap, indentModeMap, stats);
                 }
 
                 // Write statistics report to Desktop with UTC timestamp in the filename
@@ -77,7 +79,7 @@ namespace indentChecker
             }
         }
 
-        static void ScanDirectory(string dir, HashSet<string> ignoredFullPaths, HashSet<string> ignoredNames, HashSet<string> ignoredExtensions, EncodingMapFile encodingMap, ScanStatistics stats)
+        static void ScanDirectory(string dir, HashSet<string> ignoredFullPaths, HashSet<string> ignoredNames, HashSet<string> ignoredExtensions, MappingFile encodingMap, MappingFile indentModeMap, ScanStatistics stats)
         {
             if (ignoredFullPaths.Contains(dir)) { stats.AddIgnoredByFullPath(dir); return; }
             if (ignoredNames.Contains(Path.GetFileName(dir))) { stats.AddIgnoredByName(dir); return; }
@@ -87,7 +89,7 @@ namespace indentChecker
             var subdirs = Directory.GetDirectories(dir).OrderBy(x => x, StringComparer.OrdinalIgnoreCase);
             foreach (var subdir in subdirs)
             {
-                ScanDirectory(subdir, ignoredFullPaths, ignoredNames, ignoredExtensions, encodingMap, stats);
+                ScanDirectory(subdir, ignoredFullPaths, ignoredNames, ignoredExtensions, encodingMap, indentModeMap, stats);
             }
 
             // Then process files, sorted
@@ -102,7 +104,7 @@ namespace indentChecker
                 if (!string.IsNullOrEmpty(ext))
                     stats.AddDetectedExtension(ext);
 
-                string encodingName = encodingMap.GetEncodingName(file) ?? encodingMap.GetEncodingName(ext) ?? "utf-8";
+                string encodingName = encodingMap.GetValue(file) ?? encodingMap.GetValue(ext) ?? "utf-8";
                 Encoding encoding;
                 try {
                     encoding = Encoding.GetEncoding(encodingName);
@@ -123,18 +125,21 @@ namespace indentChecker
                     continue;
                 }
 
-                stats.AddCheckedFile(file, encodingName);
+                // Determine indent mode before recording checked file
+                string? indentModeStr = indentModeMap.GetValue(file) ?? indentModeMap.GetValue(ext);
+                IndentMode indentMode = ParseIndentMode(indentModeStr);
+                stats.AddCheckedFile(file, encodingName, indentMode);
 
                 string message;
-                if (NeedsIndentationAttention(lines, out message))
+                if (NeedsIndentationAttention(lines, indentMode, out message))
                 {
-                    stats.AddFileWithIssue(file, encodingName, message);
+                    stats.AddFileWithIssue(file, encodingName, indentMode, message);
                     ConsoleColorUtil.WriteLine($"{file}: {message}", ConsoleColor.Yellow);
                 }
             }
         }
 
-        static bool NeedsIndentationAttention(string[] lines, out string message)
+        static bool NeedsIndentationAttention(string[] lines, IndentMode indentMode, out string message)
         {
             for (int i = 0; i < lines.Length; i++)
             {
@@ -163,17 +168,29 @@ namespace indentChecker
                             return true;
                         }
                     }
-                    // Check for indentation length
-                    // If less than 4 spaces, it's an error
+                    // Check for indentation less than 4 spaces
                     if (indentLength < 4)
                     {
                         message = $"Indentation less than 4 spaces at line {i + 1} (found {indentLength} spaces).";
+                        return true;
+                    }
+                    // If strict mode, check for indentation not divisible by 4
+                    if (indentMode == IndentMode.Strict && indentLength % 4 != 0)
+                    {
+                        message = $"Indentation not a multiple of 4 spaces at line {i + 1} (found {indentLength} spaces).";
                         return true;
                     }
                 }
             }
             message = string.Empty;
             return false;
+        }
+
+        // ParseIndentMode: strict is fallback if input is null/invalid
+        static IndentMode ParseIndentMode(string? s)
+        {
+            if (string.Equals(s, "flex", StringComparison.OrdinalIgnoreCase)) return IndentMode.Flex;
+            return IndentMode.Strict;
         }
     }
 }
