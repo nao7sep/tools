@@ -4,15 +4,21 @@ namespace indentChecker
 {
     public class ScanStatistics
     {
-        public HashSet<string> ScannedDirectories { get; } = new();
+        public HashSet<string> ScannedDirectories { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> DetectedExtensions { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<(string File, string Encoding)> CheckedFiles { get; } = new();
-        public HashSet<string> IgnoredByFullPath { get; } = new();
-        public HashSet<string> IgnoredByName { get; } = new();
-        public HashSet<string> IgnoredByExtension { get; } = new();
+        public HashSet<string> IgnoredByFullPath { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> IgnoredByName { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> IgnoredByExtension { get; } = new(StringComparer.OrdinalIgnoreCase);
         public List<(string File, string Encoding, string Message)> FilesWithIssues { get; } = new();
         public List<string> Errors { get; } = new();
 
         public void AddScannedDirectory(string dir) => ScannedDirectories.Add(dir);
+        public void AddDetectedExtension(string ext)
+        {
+            if (!string.IsNullOrEmpty(ext))
+                DetectedExtensions.Add(ext);
+        }
         public void AddCheckedFile(string file, string encoding) => CheckedFiles.Add((file, encoding));
         public void AddIgnoredByFullPath(string file) => IgnoredByFullPath.Add(file);
         public void AddIgnoredByName(string file) => IgnoredByName.Add(file);
@@ -28,6 +34,10 @@ namespace indentChecker
             sb.AppendLine("[Scanned Directories]");
             foreach (var dir in ScannedDirectories.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
                 sb.AppendLine(dir);
+            sb.AppendLine();
+            sb.AppendLine("[Detected Extensions]");
+            foreach (var ext in DetectedExtensions.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+                sb.AppendLine(ext.ToLowerInvariant());
             sb.AppendLine();
             sb.AppendLine("[Checked Files]");
             foreach (var (file, encoding) in CheckedFiles.OrderBy(x => x.File, StringComparer.OrdinalIgnoreCase))

@@ -99,6 +99,9 @@ namespace indentChecker
                 if (ignoredExtensions.Contains(Path.GetExtension(file))) { stats.AddIgnoredByExtension(file); continue; }
 
                 string ext = Path.GetExtension(file);
+                if (!string.IsNullOrEmpty(ext))
+                    stats.AddDetectedExtension(ext);
+
                 string encodingName = encodingMap.GetEncodingName(file) ?? encodingMap.GetEncodingName(ext) ?? "utf-8";
                 Encoding encoding;
                 try {
