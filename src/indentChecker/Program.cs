@@ -153,13 +153,6 @@ namespace indentChecker
                         message = $"Line {i + 1} contains only indentation and no visible characters.";
                         return true;
                     }
-                    // Check for indentation length
-                    // If less than 4 spaces, it's an error
-                    if (indentLength < 4)
-                    {
-                        message = $"Indentation less than 4 spaces at line {i + 1} (found {indentLength} spaces).";
-                        return true;
-                    }
                     // Check for any non-ASCII-space char in indentation
                     for (int j = 0; j < indentLength; j++)
                     {
@@ -169,6 +162,13 @@ namespace indentChecker
                             message = $"Non-ASCII-space char (U+{((int)c):X4}) used for indentation at line {i + 1}.";
                             return true;
                         }
+                    }
+                    // Check for indentation length
+                    // If less than 4 spaces, it's an error
+                    if (indentLength < 4)
+                    {
+                        message = $"Indentation less than 4 spaces at line {i + 1} (found {indentLength} spaces).";
+                        return true;
                     }
                 }
             }
