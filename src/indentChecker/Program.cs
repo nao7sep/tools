@@ -39,12 +39,9 @@ namespace indentChecker
                 var scanRoots = new TrimmedLinesFile(GetAbsolutePath("scanRoots.txt")).Lines;
                 var encodingMap = new EncodingMapFile(GetAbsolutePath("encodingMap.json"));
 
-                var filesNeedingAttention = new List<(string File, string Message)>();
-
-                // Sort scan roots before processing
-                var sortedScanRoots = scanRoots.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
-
                 var stats = new ScanStatistics();
+
+                var sortedScanRoots = scanRoots.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
 
                 foreach (var root in sortedScanRoots)
                 {
@@ -53,10 +50,16 @@ namespace indentChecker
                         Console.WriteLine($"Root directory not found: {root}");
                         continue;
                     }
-                    ScanDirectory(root, ignoredFullPaths, ignoredNames, ignoredExtensions, encodingMap, filesNeedingAttention, stats);
+                    ScanDirectory(root, ignoredFullPaths, ignoredNames, ignoredExtensions, encodingMap, stats);
                 }
 
-                if (filesNeedingAttention.Count == 0)
+                // Write statistics report to Desktop with UTC timestamp in the filename
+                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                string utcNow = DateTime.UtcNow.ToString("yyyyMMdd'T'HHmmss'Z'");
+                string reportFile = Path.Combine(desktopPath, $"indentChecker-{utcNow}.log");
+                stats.WriteReport(reportFile);
+
+                if (stats.FilesWithIssues.Count == 0)
                 {
                     Console.WriteLine("No indentation issues found.");
                 }
@@ -72,25 +75,26 @@ namespace indentChecker
             }
         }
 
-        static void ScanDirectory(string dir, HashSet<string> ignoredFullPaths, HashSet<string> ignoredNames, EncodingMapFile encodingMap, List<(string File, string Message)> filesNeedingAttention)
+        static void ScanDirectory(string dir, HashSet<string> ignoredFullPaths, HashSet<string> ignoredNames, HashSet<string> ignoredExtensions, EncodingMapFile encodingMap, ScanStatistics stats)
         {
-            // Ignore this directory if in ignoredFullPaths or ignoredNames
-            if (ignoredFullPaths.Contains(dir) || ignoredNames.Contains(Path.GetFileName(dir)))
-                return;
+            if (ignoredFullPaths.Contains(dir)) { stats.AddIgnoredByFullPath(dir); return; }
+            if (ignoredNames.Contains(Path.GetFileName(dir))) { stats.AddIgnoredByName(dir); return; }
+            stats.AddScannedDirectory(dir);
 
             // Dive into subdirectories first, sorted
             var subdirs = Directory.GetDirectories(dir).OrderBy(x => x, StringComparer.OrdinalIgnoreCase);
             foreach (var subdir in subdirs)
             {
-                ScanDirectory(subdir, ignoredFullPaths, ignoredNames, encodingMap, filesNeedingAttention);
+                ScanDirectory(subdir, ignoredFullPaths, ignoredNames, ignoredExtensions, encodingMap, stats);
             }
 
             // Then process files, sorted
             var files = Directory.GetFiles(dir).OrderBy(x => x, StringComparer.OrdinalIgnoreCase);
             foreach (var file in files)
             {
-                if (ignoredFullPaths.Contains(file) || ignoredNames.Contains(Path.GetFileName(file)))
-                    continue;
+                if (ignoredFullPaths.Contains(file)) { stats.AddIgnoredByFullPath(file); continue; }
+                if (ignoredNames.Contains(Path.GetFileName(file))) { stats.AddIgnoredByName(file); continue; }
+                if (ignoredExtensions.Contains(Path.GetExtension(file))) { stats.AddIgnoredByExtension(file); continue; }
 
                 string ext = Path.GetExtension(file);
                 string encodingName = encodingMap.GetEncodingName(file) ?? encodingMap.GetEncodingName(ext) ?? "utf-8";
@@ -99,21 +103,27 @@ namespace indentChecker
                     encoding = Encoding.GetEncoding(encodingName);
                 }
                 catch (Exception ex) {
-                    ConsoleColorUtil.WriteLine($"Invalid encoding '{encodingName}' for file '{file}': {ex}", ConsoleColor.Red);
+                    string err = $"Invalid encoding '{encodingName}' for file '{file}': {ex}";
+                    ConsoleColorUtil.WriteLine(err, ConsoleColor.Red);
+                    stats.AddError(err);
                     continue;
                 }
 
                 string[] lines;
                 try { lines = File.ReadAllLines(file, encoding); }
                 catch (Exception ex) {
-                    ConsoleColorUtil.WriteLine($"Failed to read file '{file}' with encoding '{encodingName}': {ex}", ConsoleColor.Red);
+                    string err = $"Failed to read file '{file}' with encoding '{encodingName}': {ex}";
+                    ConsoleColorUtil.WriteLine(err, ConsoleColor.Red);
+                    stats.AddError(err);
                     continue;
                 }
+
+                stats.AddCheckedFile(file, encodingName);
 
                 string message;
                 if (NeedsIndentationAttention(lines, out message))
                 {
-                    filesNeedingAttention.Add((file, message));
+                    stats.AddFileWithIssue(file, encodingName, message);
                     ConsoleColorUtil.WriteLine($"{file}: {message}", ConsoleColor.Yellow);
                 }
             }
