@@ -22,7 +22,7 @@ namespace indentChecker
                 while ((line = reader.ReadLine()) != null)
                 {
                     var trimmed = line.Trim();
-                    if (!string.IsNullOrEmpty(trimmed))
+                    if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith("#"))
                         lines.Add(trimmed);
                 }
             }

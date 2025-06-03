@@ -1,2 +1,2 @@
-# List of root directories to scan
+# List of ignored file extensions
 # Lines starting with # are comments

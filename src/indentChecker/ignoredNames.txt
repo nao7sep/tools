@@ -1,5 +1,2 @@
 # List of ignored directory or file names
 # Lines starting with # are comments
-node_modules
-.DS_Store
-Thumbs.db

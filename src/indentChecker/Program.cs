@@ -8,6 +8,7 @@ namespace indentChecker
         {
             "ignoredFullPaths.txt",
             "ignoredNames.txt",
+            "ignoredExtensions.txt",
             "scanRoots.txt",
             "encodingMap.json"
         };
@@ -34,6 +35,7 @@ namespace indentChecker
                 // Load config files using absolute paths
                 var ignoredFullPaths = new HashSet<string>(new TrimmedLinesFile(GetAbsolutePath("ignoredFullPaths.txt")).Lines, StringComparer.OrdinalIgnoreCase);
                 var ignoredNames = new HashSet<string>(new TrimmedLinesFile(GetAbsolutePath("ignoredNames.txt")).Lines, StringComparer.OrdinalIgnoreCase);
+                var ignoredExtensions = new HashSet<string>(new TrimmedLinesFile(GetAbsolutePath("ignoredExtensions.txt")).Lines, StringComparer.OrdinalIgnoreCase);
                 var scanRoots = new TrimmedLinesFile(GetAbsolutePath("scanRoots.txt")).Lines;
                 var encodingMap = new EncodingMapFile(GetAbsolutePath("encodingMap.json"));
 
@@ -42,6 +44,8 @@ namespace indentChecker
                 // Sort scan roots before processing
                 var sortedScanRoots = scanRoots.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
 
+                var stats = new ScanStatistics();
+
                 foreach (var root in sortedScanRoots)
                 {
                     if (!Directory.Exists(root))
@@ -49,7 +53,7 @@ namespace indentChecker
                         Console.WriteLine($"Root directory not found: {root}");
                         continue;
                     }
-                    ScanDirectory(root, ignoredFullPaths, ignoredNames, encodingMap, filesNeedingAttention);
+                    ScanDirectory(root, ignoredFullPaths, ignoredNames, ignoredExtensions, encodingMap, filesNeedingAttention, stats);
                 }
 
                 if (filesNeedingAttention.Count == 0)
