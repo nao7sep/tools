@@ -1,2 +1,4 @@
 # List of root directories to scan
 # Lines starting with # are comments
+
+C:\Repositories

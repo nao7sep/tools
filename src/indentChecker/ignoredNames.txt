@@ -1,2 +1,13 @@
 # List of ignored directory or file names
 # Lines starting with # are comments
+
+.DS_Store
+.git
+.idea
+.svn
+.vs
+.vscode
+bin
+desktop.ini
+obj
+Thumbs.db
